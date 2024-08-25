@@ -1,11 +1,7 @@
 import mongoose from 'mongoose';
 
 const validateExchangeRequest = (req, res, next) => {
-    const { requester, requestedBook, offeredBook } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(requester)) {
-        return res.status(400).json({ error: 'Invalid requester ID' });
-    }
+    const { requestedBook, offeredBook } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(requestedBook)) {
         return res.status(400).json({ error: 'Invalid requested book ID' });

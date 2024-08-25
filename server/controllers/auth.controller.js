@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import bcrypt from 'bcryptjs';
-import generateTokenAndSetCookie from "../config/generate.token.js";
+import { generateTokenAndSetCookie } from "../config/authUtils.js";
 
 export const register = async (req, res) => {
     const { username, password } = req.body;
@@ -21,8 +21,8 @@ export const register = async (req, res) => {
 
         await user.save();
 
-        generateTokenAndSetCookie(user.id, res);
-        res.status(201).json({ msg: 'User registered successfully' });
+        const token = await generateTokenAndSetCookie(user.id, res);
+        res.status(201).json({ msg: 'User registered successfully', token });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ error: 'Server error', details: err.message });
@@ -43,7 +43,7 @@ export const login = async (req, res) => {
             return res.status(400).json({ msg: 'Invalid Credentials' });
         }
 
-        generateTokenAndSetCookie(user.id, res);
+        await generateTokenAndSetCookie(user.id, res);
         res.status(200).json({ msg: 'Login successful' });
 
     } catch (err) {

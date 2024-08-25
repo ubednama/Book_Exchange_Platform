@@ -3,7 +3,7 @@ import User from "../models/User.js";
 
 const postBook = async (req, res) => {
     const { title, author, genre } = req.body;
-    const userId = req.user.id;
+    const userId = req.userId;
 
     try {
         const existingBook = await Book.findOne({ title, author });
@@ -33,14 +33,119 @@ const postBook = async (req, res) => {
 
 
 const getBook = async (req, res) => {
+    const userId = req.userId;
+
     try {
-        const books = await Book.find()
-            .select('title author genre _id')
+        const books = await Book.find({owner: {$ne: userId}})
+            .select('title author genre')
             .populate('owner', 'username');
         res.json(books);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
+    }
+}
+
+export const getUserBooks = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        const user = await User.findById(userId).populate('books');
+        res.json(user.books);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+export const editBook = async (req, res) => {
+    const { title, author, genre } = req.body;
+    const bookId = req.params.id;
+    const userId = req.userId;
+
+    try {
+        const book = await Book.findById(bookId);
+        if (!book) {
+            return res.status(404).json({ error: 'Book not found' });
+        }
+
+        if (book.owner.toString() !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        book.title = title;
+        book.author = author;
+        book.genre = genre;
+
+        await book.save();
+        res.json(book);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+export const deleteBook = async (req, res) => {
+    const bookId = req.params.id;
+    const userId = req.userId;
+
+    try {
+        const book = await Book.findById(bookId);
+        if (!book) {
+            return res.status(404).json({ error: 'Book not found' });
+        }
+
+        if (book.owner.toString() !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        await Book.findByIdAndDelete(bookId);
+
+        const user = await User.findById(userId);
+        user.books = user.books.filter(book => book.toString() !== bookId);
+        await user.save();
+
+        res.json({ message: 'Book removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+export const getMatches = async(req, res) => {
+    const userId = req.userId;
+
+    try {
+        const user = await User.findById(userId).populate('books');
+
+        if (!user) {
+            return res.status(404).json({ error: 'User must login first' });
+        }
+        
+        let matches;
+
+        const userBooks = user.books
+
+        if (userBooks.length === 0) matches = await Book.find().populate('owner', 'username')
+        else {
+            const genres = userBooks.map(book => book.genre);
+            const authors = userBooks.map(book => book.author);
+            
+            matches = await Book.find({
+                $and: [{
+                    $or: [
+                            { genre: { $in: genres } },
+                            { author: { $in: authors } }
+                        ]},
+                    {owner: { $ne: userId }}
+                ]
+            }).populate('owner', 'username');
+        }
+
+        res.json(matches);
+    } catch(err) {
+        console.error(err.message);
+        res.status(500).send("Server error")
     }
 }
 
