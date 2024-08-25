@@ -6,7 +6,6 @@ const generateTokenAndSetCookie = (userId, res) => {
             if (err) {
                 console.error("Failed to generate token:", err);
                 reject(new Error("Failed to generate token"));
-                // res.status(500).json({ error: "Failed to generate token" });
                 return;
             }
 
@@ -16,7 +15,6 @@ const generateTokenAndSetCookie = (userId, res) => {
                 sameSite: 'strict',
                 secure: process.env.NODE_ENV === "production"
             });
-            // console.log('Cookie set:', token);
             resolve();
         });
     });

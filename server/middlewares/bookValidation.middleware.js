@@ -25,7 +25,7 @@ const validateBookDetails = (req, res, next) => {
 
 
 const validateBookEdit = (req, res, next) => {
-    const {title, author, genre} = req.body;
+    const { title, author, genre, description } = req.body;
 
     if(!title || !author || !genre) {
         return res.status(400).json({error: "Provide data to edit"});
@@ -38,6 +38,7 @@ const validateBookEdit = (req, res, next) => {
     req.body.title = title.trim();
     req.body.author = author.trim();
     req.body.genre = genre.trim();
+    req.body.description = description ? description.trim() : '';
 
     next();
 }

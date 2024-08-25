@@ -2,7 +2,7 @@ import Book from "../models/Book.js";
 import User from "../models/User.js";
 
 const postBook = async (req, res) => {
-    const { title, author, genre } = req.body;
+    const { title, author, genre, description= '' } = req.body;
     const userId = req.userId;
 
     try {
@@ -15,6 +15,7 @@ const postBook = async (req, res) => {
             title,
             author,
             genre,
+            description,
             owner: userId,
         });
 
@@ -35,7 +36,7 @@ const postBook = async (req, res) => {
 const getBook = async (req, res) => {
     const userId = req.userId;
     const {genre = 'all', author = 'all'} = req.query;
-    
+
     try {
         let query = { owner: { $ne: userId } };
 
@@ -65,7 +66,7 @@ export const getUserBooks = async (req, res) => {
 };
 
 export const editBook = async (req, res) => {
-    const { title, author, genre } = req.body;
+    const { title, author, genre, description } = req.body;
     const bookId = req.params.id;
     const userId = req.userId;
 
@@ -79,9 +80,10 @@ export const editBook = async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized' });
         }
 
-        book.title = title;
-        book.author = author;
-        book.genre = genre;
+        book.title = title || book.title;
+        book.author = author || book.author;
+        book.genre = genre || book.genre;
+        book.description = description !== undefined ? description.trim() : book.description;
 
         await book.save();
         res.json(book);
