@@ -34,9 +34,15 @@ const postBook = async (req, res) => {
 
 const getBook = async (req, res) => {
     const userId = req.userId;
-
+    const {genre = 'all', author = 'all'} = req.query;
+    
     try {
-        const books = await Book.find({owner: {$ne: userId}})
+        let query = { owner: { $ne: userId } };
+
+        if(genre!=='all') query.genre = genre;
+        if(author!=='all') query.author = author;
+
+        const books = await Book.find(query)
             .select('title author genre')
             .populate('owner', 'username');
         res.json(books);
