@@ -1,27 +1,12 @@
 import jwt from "jsonwebtoken"
 
-const generateTokenAndSetCookie = (userId, res) => {
-    return new Promise((resolve, reject) => {
-        jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15d' }, (err, token) => {
-            if (err) {
-                console.error("Failed to generate token:", err);
-                reject(new Error("Failed to generate token"));
-                return;
-            }
-
-            res.cookie("jwt", token, {
-                maxAge: 15 * 24 * 60 * 60 * 1000,
-                httpOnly: true,
-                sameSite: 'strict',
-                secure: process.env.NODE_ENV === "production"
-            });
-            resolve();
-        });
-    });
-}
+const generateToken = (userId) => {
+    return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15d' });
+};
 
 const authenticateToken = (req, res, next) => {
-    const token = req.cookies.jwt;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({ msg: 'Login or Register first' });
@@ -34,7 +19,7 @@ const authenticateToken = (req, res, next) => {
         req.userId = user.userId;
         next();
     });
-}
+};
 
 const removeToken = (req, res) => {
     res.cookie('jwt', '', {
@@ -48,6 +33,6 @@ const removeToken = (req, res) => {
 
 export {
     authenticateToken,
-    generateTokenAndSetCookie,
+    generateToken,
     removeToken
 } 
