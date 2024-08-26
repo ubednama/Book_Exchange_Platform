@@ -6,17 +6,19 @@ export const postBook = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const existingBook = await Book.findOne({ title, author });
+        const existingBook = await Book.findOne({ title, author, owner: userId });
         if (existingBook) {
-            return res.status(400).json({ error: 'Book with the same title and author already exists' });
+            return res.status(400).json({ error: 'You already own a book with the same title and author' });
         }
 
         const book = new Book({ title, author, genre, description, owner: userId });
         await book.save();
 
-        const user = await User.findById(userId);
-        user.books.push(book._id);
-        await user.save();
+        await User.findByIdAndUpdate(
+            userId,
+            { $push: { books: book._id } },
+            { new: true }
+        );
 
         res.status(201).json(book);
     } catch (err) {
@@ -54,19 +56,17 @@ export const getUserBooks = async (req, res) => {
     const { genre = 'all', author = 'all' } = req.query;
 
     try {
-        const allBooks = await Book.find({ owner: userId })
-            .select('author genre');
+        const query = { owner: userId };
 
-        const authors = [...new Set(allBooks.map(book => book.author))];
-        const genres = [...new Set(allBooks.map(book => book.genre))];
+        if (genre !== 'all') query.genre = genre;
+        if (author !== 'all') query.author = author;
 
-        const filteredBooks = await Book.find({
-            owner: userId,
-            ...(genre !== 'all' ? { genre } : {}),
-            ...(author !== 'all' ? { author } : {}),
-        }).select('title author genre description');
+        const books = await Book.find(query).select('title author genre description');
 
-        res.json({ books: filteredBooks, authors, genres });
+        const authors = await Book.distinct('author', { owner: userId });
+        const genres = await Book.distinct('genre', { owner: userId });
+
+        res.json({ books, authors, genres });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ error: 'Server error', details: err.message });
@@ -106,20 +106,18 @@ export const deleteBook = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const book = await Book.findById(bookId);
+        const book = await Book.findOne({ _id: bookId, owner: userId });
         if (!book) {
-            return res.status(404).json({ error: 'Book not found' });
-        }
-
-        if (book.owner.toString() !== userId) {
-            return res.status(403).json({ error: 'Unauthorized' });
+            return res.status(404).json({ error: 'Book not found or unauthorized' });
         }
 
         await Book.findByIdAndDelete(bookId);
 
-        const user = await User.findById(userId);
-        user.books = user.books.filter(book => book.toString() !== bookId);
-        await user.save();
+        await User.findByIdAndUpdate(
+            userId,
+            { $pull: { books: bookId } },
+            { new: true }
+        );
 
         res.json({ message: 'Book removed' });
     } catch (err) {
@@ -133,62 +131,71 @@ const getTopGenresAndAuthors = async () => {
         Book.aggregate([
             { $group: { _id: '$genre', count: { $sum: 1 } } },
             { $sort: { count: -1 } },
-            { $limit: 10 }
+            { $limit: 10 },
+            { $project: { _id: 0, genre: '$_id' } }
         ]).exec(),
         Book.aggregate([
             { $group: { _id: '$author', count: { $sum: 1 } } },
             { $sort: { count: -1 } },
-            { $limit: 10 }
+            { $limit: 10 },
+            { $project: { _id: 0, author: '$_id' } }
         ]).exec()
     ]);
 
     return {
-        genres: topGenres.map(g => g._id),
-        authors: topAuthors.map(a => a._id)
+        genres: topGenres.map(g => g.genre),
+        authors: topAuthors.map(a => a.author)
+    };
+};
+
+const getUserGenresAndAuthors = async (userId) => {
+    const [userGenres, userAuthors] = await Promise.all([
+        Book.aggregate([
+            { $match: { owner: userId } },
+            { $group: { _id: '$genre', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 10 },
+            { $project: { _id: 0, genre: '$_id' } }
+        ]).exec(),
+        Book.aggregate([
+            { $match: { owner: userId } },
+            { $group: { _id: '$author', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 10 },
+            { $project: { _id: 0, author: '$_id' } }
+        ]).exec()
+    ]);
+
+    return {
+        genres: userGenres.map(g => g.genre),
+        authors: userAuthors.map(a => a.author)
     };
 };
 
 const findMatches = async (userId, genres, authors) => {
     return await Book.find({
-        $and: [
-            {
-                $or: [
-                    { genre: { $in: genres } },
-                    { author: { $in: authors } }
-                ]
-            },
-            { owner: { $ne: userId } }
-        ]
+        $and: [{
+                $or: [{ genre: { $in: genres } },
+                    { author: { $in: authors } }]
+                },{ owner: { $ne: userId } }]
     }).populate('owner', 'username').limit(20);
 };
-
 
 export const getMatches = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const user = await User.findById(userId).populate('books');
+        const user = await User.findById(userId);
 
         if (!user) {
-            return res.status(404).json({ error: 'User must login first' });
+            return res.status(404).json({error: 'User not found'});
         }
 
-        const userBooks = user.books;
-        let matches;
+        const { genres, authors } = (await Book.countDocuments({ owner: userId })) > 0
+            ? await getUserGenresAndAuthors(userId)
+            : await getTopGenresAndAuthors();
 
-        if (userBooks.length === 0) {
-            const { genres, authors } = await getTopGenresAndAuthors();
-            matches = await findMatches(userId, genres, authors);
-        } else {
-            const genres = userBooks.map(book => book.genre);
-            const authors = userBooks.map(book => book.author);
-            matches = await findMatches(userId, genres, authors);
-        }
-
-        if (matches.length === 0) {
-            const { genres, authors } = await getTopGenresAndAuthors();
-            matches = await findMatches(userId, genres, authors);
-        }
+        const matches = await findMatches(userId, genres, authors);
 
         res.json(matches);
     } catch (err) {
