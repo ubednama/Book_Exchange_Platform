@@ -3,12 +3,14 @@ import cors from 'cors';
 import routes from './routes/index.js';
 import dbConnection from './config/db.connection.js';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 const corsOptions = {
-    origin: 'https://book-exchange-platform-1.onrender.com/',
+    origin: 'https://book-exchange-platform-vf2q.onrender.com',
     // origin: 'http://localhost:5173',
     credentials: true
 }
@@ -23,6 +25,17 @@ app.get('/api', (req, res) => {
 })
 
 app.use("/api", routes)
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendPath = path.join(__dirname, '../client/dist');
+
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
