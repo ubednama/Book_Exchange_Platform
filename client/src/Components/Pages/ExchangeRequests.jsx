@@ -150,7 +150,7 @@ const ExchangeRequests = () => {
                     flexWrap="wrap"
                   >
                     <Text flex="1" isTruncated fontSize="sm" mr={2}>
-                      Sent By: {request.requestedBy?.name}
+                      Requested By: {request.requestedBy?.name}
                     </Text>
                     <Text flex="1" isTruncated fontSize="sm" mr={2}>
                       Requested: {request.requestedBook?.title} by{" "}
