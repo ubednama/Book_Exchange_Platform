@@ -1,7 +1,7 @@
 import { Box, Text, Button, Flex, useDisclosure } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
 import axiosInstance from "../config/api";
-import ExchangeModal from "./ExchangeModal";
+import ExchangeModal from "./Modals/ExchangeModal";
 
 const BookCard = ({ book, onDelete, onEdit, userBooks = false }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -10,8 +10,8 @@ const BookCard = ({ book, onDelete, onEdit, userBooks = false }) => {
   const handleExchangeRequest = async (requestedBookId, offeredBookId) => {
     try {
       await axiosInstance.post("/exchange-requests", {
-        requestedBook: requestedBookId,
-        offeredBook: offeredBookId,
+        requestedBookId,
+        offeredBookId,
       });
       toast("Exchange request sent!");
     } catch (error) {

@@ -11,8 +11,8 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useEffect, useState, useCallback } from "react";
-import BookCard from "./BookCard";
-import axiosInstance from "../config/api";
+import BookCard from "../BookCard";
+import axiosInstance from "../../config/api";
 
 const Home = () => {
   const [allBooks, setAllBooks] = useState([]);
@@ -102,34 +102,36 @@ const Home = () => {
               <Tab>All Books</Tab>
               <Tab>Recommended Books</Tab>
             </TabList>
-            <Box display="flex" gap={4} my={4}>
-              <Select
-                value={selectedAuthor}
-                onChange={handleAuthorChange}
-                size="sm"
-                width="200px"
-              >
-                <option value="all">All Authors</option>
-                {authors.map((author) => (
-                  <option key={author} value={author}>
-                    {author}
-                  </option>
-                ))}
-              </Select>
-              <Select
-                value={selectedGenre}
-                onChange={handleGenreChange}
-                size="sm"
-                width="200px"
-              >
-                <option value="all">All Genres</option>
-                {genres.map((genre) => (
-                  <option key={genre} value={genre}>
-                    {genre}
-                  </option>
-                ))}
-              </Select>
-            </Box>
+            {tabIndex === 0 && (
+              <Box display="flex" gap={4} my={4}>
+                <Select
+                  value={selectedAuthor}
+                  onChange={handleAuthorChange}
+                  size="sm"
+                  width="200px"
+                >
+                  <option value="all">All Authors</option>
+                  {authors.map((author) => (
+                    <option key={author} value={author}>
+                      {author}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  value={selectedGenre}
+                  onChange={handleGenreChange}
+                  size="sm"
+                  width="200px"
+                >
+                  <option value="all">All Genres</option>
+                  {genres.map((genre) => (
+                    <option key={genre} value={genre}>
+                      {genre}
+                    </option>
+                  ))}
+                </Select>
+              </Box>
+            )}
           </Box>
           {loading ? (
             <Flex justify="center" width="100%">

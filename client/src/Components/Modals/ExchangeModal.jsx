@@ -8,14 +8,17 @@ import {
   ModalCloseButton,
   Button,
   Text,
-  Select
+  Select,
+  Box,
+  useToast,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import axiosInstance from "../config/api";
+import axiosInstance from "../../config/api";
 
 const ExchangeModal = ({ isOpen, onClose, book, onExchange }) => {
   const [userBooks, setUserBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState("");
+  const toast = useToast();
 
   useEffect(() => {
     const fetchUserBooks = async () => {
@@ -24,15 +27,41 @@ const ExchangeModal = ({ isOpen, onClose, book, onExchange }) => {
         setUserBooks(response.data.books);
       } catch (error) {
         console.error("Failed to fetch user books:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch user books.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       }
     };
 
     fetchUserBooks();
-  }, []);
+  }, [toast]);
 
-  const handleExchange = () => {
-    onExchange(book._id, selectedBook);
-    onClose();
+  const handleExchange = async () => {
+    try {
+      await onExchange(book._id, selectedBook);
+      toast({
+        title: "Success",
+        description: "Exchange request sent successfully.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Failed to send exchange request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send exchange request.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      onClose();
+    }
   };
 
   return (
@@ -51,10 +80,17 @@ const ExchangeModal = ({ isOpen, onClose, book, onExchange }) => {
           <Text fontSize="md" mb={2}>
             Genre: {book.genre}
           </Text>
-          <Text fontSize="md" mb={4}>
-            {book.description}
-          </Text>
-          <Text fontSize="md" mb={2}>
+          <Box
+            p={4}
+            borderWidth={1}
+            borderRadius="md"
+            borderColor="gray.200"
+            bg="gray.50"
+            mb={4}
+          >
+            <Text fontSize="md">{book.description}</Text>
+          </Box>
+          <Text fontSize="md" mb={2} fontWeight="semibold" color="blue.600">
             Owner: {book?.owner?.username}
           </Text>
           <Select

@@ -1,10 +1,10 @@
 import { Route, Routes } from "react-router-dom";
-import Home from "./Home.jsx";
-import ExchangeRequests from "./ExchangeRequests.jsx";
-import YourLibrary from "./YourLibrary.jsx";
+import Home from "./Pages/Home.jsx";
+import ExchangeRequests from "./Pages/ExchangeRequests.jsx";
+import YourLibrary from "./Pages/YourLibrary.jsx";
 import ProtectedRoute from "./ProtectedRoute";
 import NavBar from "./NavBar.jsx";
-import Auth from "./Auth.jsx";
+import Auth from "./Pages/Auth.jsx";
 
 const AppRoutes = () => {
   return (

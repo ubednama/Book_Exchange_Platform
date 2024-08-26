@@ -18,6 +18,8 @@ const ExchangeRequestSchema = new mongoose.Schema({
         enum: ['pending', 'accepted', 'rejected'],
         default: 'pending' 
     },
+}, {
+    timestamps: true
 });
 
 export default mongoose.model('ExchangeRequest', ExchangeRequestSchema);

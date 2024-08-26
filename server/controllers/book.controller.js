@@ -2,7 +2,7 @@ import Book from "../models/Book.js";
 import User from "../models/User.js";
 
 export const postBook = async (req, res) => {
-    const { title, author, genre, description= '' } = req.body;
+    const { title, author, genre, description = '' } = req.body;
     const userId = req.userId;
 
     try {
@@ -11,14 +11,7 @@ export const postBook = async (req, res) => {
             return res.status(400).json({ error: 'Book with the same title and author already exists' });
         }
 
-        const book = new Book({
-            title,
-            author,
-            genre,
-            description,
-            owner: userId,
-        });
-
+        const book = new Book({ title, author, genre, description, owner: userId });
         await book.save();
 
         const user = await User.findById(userId);
@@ -28,9 +21,9 @@ export const postBook = async (req, res) => {
         res.status(201).json(book);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
-}
+};
 
 export const getBook = async (req, res) => {
     const userId = req.userId;
@@ -54,7 +47,7 @@ export const getBook = async (req, res) => {
         res.json({ books: filteredBooks, authors, genres });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 };
 
@@ -78,10 +71,9 @@ export const getUserBooks = async (req, res) => {
         res.json({ books: filteredBooks, authors, genres });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 };
-
 
 export const editBook = async (req, res) => {
     const { title, author, genre, description } = req.body;
@@ -107,7 +99,7 @@ export const editBook = async (req, res) => {
         res.json(book);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 };
 
@@ -134,7 +126,7 @@ export const deleteBook = async (req, res) => {
         res.json({ message: 'Book removed' });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 };
 
@@ -172,6 +164,7 @@ const findMatches = async (userId, genres, authors) => {
     }).populate('owner', 'username').limit(20);
 };
 
+
 export const getMatches = async (req, res) => {
     const userId = req.userId;
 
@@ -202,7 +195,6 @@ export const getMatches = async (req, res) => {
         res.json(matches);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send("Server error");
+        res.status(500).send('Server error');
     }
 };
-

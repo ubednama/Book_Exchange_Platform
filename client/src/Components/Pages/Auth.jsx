@@ -1,9 +1,9 @@
 import { Box, Heading, Input, Button, Text, Flex } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
 import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../config/api";
+import axiosInstance from "../../config/api";
 
 
 const Auth = ({ isRegistering }) => {

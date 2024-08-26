@@ -5,15 +5,15 @@ import {
   Button,
   FormControl,
   FormLabel,
-  Text,
   Select,
   Flex,
   Spinner,
   useToast,
+  Text,
 } from "@chakra-ui/react";
-import BookCard from "./BookCard";
-import Modal from "./Modal";
-import axiosInstance from "../config/api";
+import BookCard from "../BookCard";
+import axiosInstance from "../../config/api";
+import BookModal from "../Modals/Modal";
 
 const YourLibrary = () => {
   const [books, setBooks] = useState([]);
@@ -25,7 +25,7 @@ const YourLibrary = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editBook, setEditBook] = useState(null);
   const [loading, setLoading] = useState(false);
-  const toast = useToast(); // Initialize toast
+  const toast = useToast();
 
   const fetchUserBooks = useCallback(async () => {
     setLoading(true);
@@ -279,25 +279,31 @@ const YourLibrary = () => {
           >
             Add Book
           </Button>
-          <Flex wrap="wrap" gap={5}>
+          <Flex
+            wrap="wrap"
+            gap={4}
+            justify="center"
+            align="start"
+            direction="row"
+          >
             {filteredBooks.map((book) => (
               <BookCard
                 key={book._id}
                 book={book}
                 userBooks={true}
-                onDelete={handleDeleteBook}
-                onEdit={openModalForEdit}
+                onEdit={() => openModalForEdit(book)}
+                onDelete={() => handleDeleteBook(book._id)}
               />
             ))}
           </Flex>
         </>
       )}
       {isModalOpen && (
-        <Modal
+        <BookModal
           isOpen={isModalOpen}
           onClose={closeModal}
           onSave={saveBook}
-          book={editBook}
+          initialBook={editBook}
         />
       )}
     </Box>
