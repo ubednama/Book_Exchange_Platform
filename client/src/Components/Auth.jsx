@@ -1,8 +1,10 @@
 import { Box, Heading, Input, Button, Text, Flex } from "@chakra-ui/react";
+import { useToast } from "@chakra-ui/react";
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../config/api";
+
 
 const Auth = ({ isRegistering }) => {
   const [username, setUsername] = useState("");
@@ -10,6 +12,7 @@ const Auth = ({ isRegistering }) => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { setAuthUser } = useAuth();
+  const toast = useToast();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -23,9 +26,23 @@ const Auth = ({ isRegistering }) => {
 
       const userResponse = await axiosInstance.get("/auth/user");
       setAuthUser(userResponse.data.user);
-
+      toast({
+        title: "Welcome back",
+        description: "You have successfully logged in.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
       navigate("/");
     } catch (err) {
+      toast({
+        title: "Login failed",
+        description: err.response?.data?.error || "An error occurred",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+
       setError(err.response?.data?.error || "An error occurred");
     }
   };
