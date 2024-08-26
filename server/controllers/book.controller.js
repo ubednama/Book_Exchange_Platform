@@ -191,13 +191,33 @@ export const getMatches = async (req, res) => {
             return res.status(404).json({error: 'User not found'});
         }
 
-        const { genres, authors } = (await Book.countDocuments({ owner: userId })) > 0
-            ? await getUserGenresAndAuthors(userId)
-            : await getTopGenresAndAuthors();
+        const userBooks = await Book.find({ owner: userId });
+        let genres, authors;
+        if (userBooks.length > 0) {
+            ({ genres, authors } = await getUserGenresAndAuthors(userId));
 
-        const matches = await findMatches(userId, genres, authors);
+            const ownedBookTitles = userBooks.map(b => b.title);
+            const ownedBookAuthors = userBooks.map(b => b.author);
+            const ownedBookGenres = userBooks.map(b => b.genre);
 
-        res.json(matches);
+            const matches = await findMatches(userId, genres, authors);
+
+            const filteredMatches = matches.filter(book =>
+                !(
+                    ownedBookTitles.includes(book.title) &&
+                    ownedBookAuthors.includes(book.author) &&
+                    ownedBookGenres.includes(book.genre)
+                )
+            );
+
+            res.json(filteredMatches);
+        } else {
+            const { genres: topGenres, authors: topAuthors } = await getTopGenresAndAuthors();
+
+            const matches = await findMatches(userId, topGenres, topAuthors);
+
+            res.json(matches);
+        }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
