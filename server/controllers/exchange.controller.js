@@ -6,7 +6,10 @@ const getExchanges = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const exchangeRequests = await ExchangeRequest.find()
+        const exchangeRequests = await ExchangeRequest.find({
+            'requestedBook.owner': userId,
+            requester: { $ne: userId }
+        })
             .populate({
                 path: 'requestedBook',
                 match: { owner: userId },
@@ -15,9 +18,7 @@ const getExchanges = async (req, res) => {
             .populate('requester', 'name')
             .populate('offeredBook', 'title author');
 
-        const filteredRequests = exchangeRequests.filter(req => req.requestedBook !== null);
-
-        res.send(filteredRequests);
+        res.send(exchangeRequests);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch incoming exchange requests', details: error.message });
     }
