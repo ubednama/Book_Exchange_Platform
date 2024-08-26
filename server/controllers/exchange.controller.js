@@ -69,40 +69,31 @@ const acceptExchange = async (req, res) => {
         }
 
         exchangeRequest.status = 'accepted';
-        await exchangeRequest.save();
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
         try {
-            await User.findByIdAndUpdate(requester._id, {
-                $pull: { books: requestedBook._id }
-            });
+            await exchangeRequest.save({ session });
 
-            await User.findByIdAndUpdate(requester._id, {
-                $push: { books: offeredBook._id }
-            });
+            await User.updateMany(
+                { _id: { $in: [requester._id, userId] } },
+                {$pull: {books: { $in: [requestedBook._id,      
+                                offeredBook._id] }},
+                $push: {books: { $each: [requestedBook._id, offeredBook._id] }}},
+                { session }
+            );
 
-            await User.findByIdAndUpdate(userId, {
-                $pull: { books: offeredBook._id }
-            });
+            await Book.updateMany(
+                { _id: { $in: [requestedBook._id, offeredBook._id] } },
+                {$set: {owner: {$cond: [
+                                { $eq: ['$_id', requestedBook._id] },
+                                userId,
+                                requester._id]
+                        }}},
+                { session }
+            );
 
-            await User.findByIdAndUpdate(userId, {
-                $push: { books: requestedBook._id }
-            });
-        } catch (updateError) {
-            console.error('Error updating user documents:', updateError);
-            return res.status(500).json({ error: 'Failed to update user documents', details: updateError.message });
-        }
-
-        try {
-            requestedBook.owner = userId;
-            offeredBook.owner = requester._id;
-            await requestedBook.save();
-            await offeredBook.save();
-        } catch (bookUpdateError) {
-            console.error('Error updating book ownership:', bookUpdateError);
-            return res.status(500).json({ error: 'Failed to update book ownership', details: bookUpdateError.message });
-        }
-
-        try {
             await ExchangeRequest.updateMany(
                 {
                     $or: [
@@ -114,21 +105,21 @@ const acceptExchange = async (req, res) => {
                     status: 'pending',
                     _id: { $ne: exchangeId }
                 },
-                { status: 'rejected' }
+                { status: 'rejected' },
+                { session }
             );
+            await session.commitTransaction();
+            session.endSession();
+            res.json({ message: 'Exchange request accepted', exchangeRequest });
         } catch (updateManyError) {
             console.error('Error updating other exchange requests:', updateManyError);
             return res.status(500).json({ error: 'Failed to update other exchange requests', details: updateManyError.message });
         }
-
-        res.json({ message: 'Exchange request accepted', exchangeRequest });
     } catch (error) {
         console.error('Error accepting exchange request:', error);
         res.status(500).json({ error: 'Failed to accept exchange request', details: error.message });
     }
 };
-
-
 
 const declineExchange = async (req, res) => {
     const { exchangeId } = req.params;
