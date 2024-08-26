@@ -13,7 +13,9 @@ const getExchanges = async (req, res) => {
                 populate: { path: 'owner', select: 'name' }
             })
             .populate('requester', 'name')
+            .populate('requestedBy', 'name')
             .populate('offeredBook', 'title author')
+            .populate('offeredBy', 'name')
             .sort({ createdAt: -1 });
 
         const filteredRequests = exchangeRequests.filter(req => req.requestedBook !== null);
@@ -32,6 +34,8 @@ const getSentExchanges = async (req, res) => {
             .populate('requestedBook', 'title author')
             .populate('offeredBook', 'title author')
             .populate('requester', 'name')
+            .populate('requestedBy', 'name')
+            .populate('offeredBy', 'name')
             .sort({ createdAt: -1 });
 
         res.send(userRequests);
@@ -48,13 +52,15 @@ const acceptExchange = async (req, res) => {
         const exchangeRequest = await ExchangeRequest.findById(exchangeId)
             .populate('requester')
             .populate('requestedBook')
-            .populate('offeredBook');
+            .populate('offeredBook')
+            .populate('requestedBy')
+            .populate('offeredBy');
 
         if (!exchangeRequest) {
             return res.status(404).json({ error: 'Exchange request not found' });
         }
 
-        const { requester, requestedBook, offeredBook } = exchangeRequest;
+        const { requester, requestedBook, offeredBook, requestedBy, offeredBy } = exchangeRequest;
 
         if (requester._id.toString() === userId) {
             return res.status(403).json({ error: 'You cannot accept your own request' });
@@ -78,9 +84,10 @@ const acceptExchange = async (req, res) => {
 
             await User.updateMany(
                 { _id: { $in: [requester._id, userId] } },
-                {$pull: {books: { $in: [requestedBook._id,      
-                                offeredBook._id] }},
-                $push: {books: { $each: [requestedBook._id, offeredBook._id] }}},
+                {$pull: {
+                    books: { $in: [requestedBook._id, offeredBook._id] }},
+                $push: {
+                    books: { $each: [requestedBook._id, offeredBook._id] }}},
                 { session }
             );
 
@@ -110,8 +117,11 @@ const acceptExchange = async (req, res) => {
             );
             await session.commitTransaction();
             session.endSession();
+
             res.json({ message: 'Exchange request accepted', exchangeRequest });
         } catch (updateManyError) {
+            await session.abortTransaction();
+            session.endSession();
             console.error('Error updating other exchange requests:', updateManyError);
             return res.status(500).json({ error: 'Failed to update other exchange requests', details: updateManyError.message });
         }
@@ -183,16 +193,19 @@ const postExchange = async (req, res) => {
             requester: requesterId,
             requestedBook: requestedBookId,
             offeredBook: offeredBookId,
-            status: 'pending'
-        }
+            status: 'pending',
+            requestedBy: requesterId,
+            offeredBy: offeredBook.owner
+        };
+
         const existingRequest = await ExchangeRequest.findOne(requestData)
         if (existingRequest) return res.status(404).json({
             error: 'A similar pending exchange request already exists'
         })
         
         const exchangeRequest = new ExchangeRequest(requestData);
-
         await exchangeRequest.save();
+        
         res.status(201).json({ message: 'Exchange request created', exchangeRequest });
     } catch (error) {
         console.error(error.message);

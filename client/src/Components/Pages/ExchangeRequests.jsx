@@ -150,6 +150,9 @@ const ExchangeRequests = () => {
                     flexWrap="wrap"
                   >
                     <Text flex="1" isTruncated fontSize="sm" mr={2}>
+                      Sent By: {request.requestedBy?.name}
+                    </Text>
+                    <Text flex="1" isTruncated fontSize="sm" mr={2}>
                       Requested: {request.requestedBook?.title} by{" "}
                       {request.requestedBook?.author}
                     </Text>
@@ -183,6 +186,9 @@ const ExchangeRequests = () => {
                     bg="gray.50"
                     flexWrap="wrap"
                   >
+                    <Text flex="1" isTruncated fontSize="sm" mr={2}>
+                      Requested By: {request.requestedBy?.name}
+                    </Text>
                     <Text flex="1" isTruncated fontSize="sm" mr={2}>
                       Requested: {request.requestedBook?.title} by{" "}
                       {request.requestedBook?.author}
