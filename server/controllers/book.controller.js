@@ -30,21 +30,19 @@ export const getBook = async (req, res) => {
     const { genre = 'all', author = 'all' } = req.query;
 
     try {
-        const allBooks = await Book.find({ owner: { $ne: userId } })
+        const query = { owner: { $ne: userId } };
+
+        if (genre !== 'all') query.genre = genre;
+        if (author !== 'all') query.author = author;
+
+        const authors = await Book.distinct('author', { owner: { $ne: userId } });
+        const genres = await Book.distinct('genre', { owner: { $ne: userId } });
+
+        const books = await Book.find(query)
             .select('title author genre description')
             .populate('owner', 'username');
 
-        const authors = [...new Set(allBooks.map(book => book.author))];
-        const genres = [...new Set(allBooks.map(book => book.genre))];
-
-        const filteredBooks = allBooks.filter(book => {
-            return (
-                (genre === 'all' || book.genre === genre) &&
-                (author === 'all' || book.author === author)
-            );
-        });
-
-        res.json({ books: filteredBooks, authors, genres });
+        res.json({ books, authors, genres });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ error: 'Server error', details: err.message });
