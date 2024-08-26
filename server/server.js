@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const corsOptions = {
-    origin: 'https://book-exchange-platform-vf2q.onrender.com',
+    origin: 'https://book-exchange-platform-1.onrender.com/',
     // origin: 'http://localhost:5173',
     credentials: true
 }
