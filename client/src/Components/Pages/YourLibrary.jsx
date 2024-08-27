@@ -279,23 +279,17 @@ const YourLibrary = () => {
           >
             Add Book
           </Button>
-          <Flex
-            wrap="wrap"
-            gap={4}
-            justify="center"
-            align="start"
-            direction="row"
-          >
-            {filteredBooks.map((book) => (
-              <BookCard
-                key={book._id}
-                book={book}
-                userBooks={true}
-                onEdit={() => openModalForEdit(book)}
-                onDelete={() => handleDeleteBook(book._id)}
-              />
-            ))}
-          </Flex>
+            <Flex wrap="wrap" gap={4} direction="row">
+              {filteredBooks.map((book) => (
+                <BookCard
+                  key={book._id}
+                  book={book}
+                  userBooks={true}
+                  onEdit={() => openModalForEdit(book)}
+                  onDelete={() => handleDeleteBook(book._id)}
+                />
+              ))}
+            </Flex>
         </>
       )}
       {isModalOpen && (
