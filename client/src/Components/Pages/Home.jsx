@@ -49,7 +49,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedAuthor, selectedGenre, toast]);
+  }, [selectedAuthor, selectedGenre]);
 
   const fetchRecommendedBooks = useCallback(async () => {
     setLoading(true);
@@ -69,7 +69,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     console.log("Fetching books...");
@@ -140,26 +140,44 @@ const Home = () => {
           ) : (
             <TabPanels>
               <TabPanel>
-                <Flex wrap="wrap" gap={5}>
-                  {allBooks.length > 0 ? (
-                    allBooks.map((book) => (
-                      <BookCard key={book._id} book={book} />
-                    ))
-                  ) : (
-                    <p>No books available.</p>
-                  )}
-                </Flex>
+                <Box width="100%" px={4}>
+                  <Box
+                    display="grid"
+                    justifyContent="center"
+                    gridTemplateColumns="repeat(auto-fill, 180px)"
+                    gap={4}
+                    maxWidth="100%"
+                    mx="auto"
+                  >
+                    {allBooks.length > 0 ? (
+                      allBooks.map((book) => (
+                        <BookCard key={book._id} book={book} />
+                      ))
+                    ) : (
+                      <p>No books available.</p>
+                    )}
+                  </Box>
+                </Box>
               </TabPanel>
               <TabPanel>
-                <Flex wrap="wrap" gap={5}>
-                  {recommendedBooks.length > 0 ? (
-                    recommendedBooks.map((book) => (
-                      <BookCard key={book._id} book={book} />
-                    ))
-                  ) : (
-                    <p>No books available.</p>
-                  )}
-                </Flex>
+                <Box width="100%" px={4}>
+                  <Box
+                    display="grid"
+                    justifyContent="center"
+                    gridTemplateColumns="repeat(auto-fill, 180px)"
+                    gap={4}
+                    maxWidth="100%"
+                    mx="auto"
+                  >
+                    {recommendedBooks.length > 0 ? (
+                      recommendedBooks.map((book) => (
+                        <BookCard key={book._id} book={book} />
+                      ))
+                    ) : (
+                      <p>No books available.</p>
+                    )}
+                  </Box>
+                </Box>
               </TabPanel>
             </TabPanels>
           )}

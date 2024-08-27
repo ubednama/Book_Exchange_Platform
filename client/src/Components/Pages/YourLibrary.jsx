@@ -21,31 +21,29 @@ const YourLibrary = () => {
   const [genres, setGenres] = useState([]);
   const [selectedAuthor, setSelectedAuthor] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
-  const [filteredBooks, setFilteredBooks] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editBook, setEditBook] = useState(null);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
-  const fetchUserBooks = useCallback(async () => {
+  const fetchUserBooks = useCallback(async (author, genre) => {
     setLoading(true);
     try {
       const { data } = await axiosInstance.get("/books/user", {
+        params: {
+          author: author || "all",
+          genre: genre || "all",
+        },
         withCredentials: true,
       });
 
-      if (Array.isArray(data.books)) {
-        setBooks(data.books);
-        setFilteredBooks(data.books);
-      }
-
+      setBooks(data.books);
       setAuthors(data.authors || []);
       setGenres(data.genres || []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching user books:", error);
       setBooks([]);
-      setFilteredBooks([]);
       setAuthors([]);
       setGenres([]);
     }
@@ -53,26 +51,8 @@ const YourLibrary = () => {
 
   useEffect(() => {
     console.log("Fetching user books...");
-    fetchUserBooks();
-  }, [fetchUserBooks]);
-
-  useEffect(() => {
-    setLoading(true);
-    console.log("Filtering books...");
-    const filterBooks = () => {
-      let result = books;
-      if (selectedAuthor) {
-        result = result.filter((book) => book.author === selectedAuthor);
-      }
-      if (selectedGenre) {
-        result = result.filter((book) => book.genre === selectedGenre);
-      }
-      setFilteredBooks(result);
-      setLoading(false);
-    };
-
-    filterBooks();
-  }, [selectedAuthor, selectedGenre, books]);
+    fetchUserBooks(selectedAuthor, selectedGenre);
+  }, [fetchUserBooks, selectedAuthor, selectedGenre]);
 
   const handleAddBook = async (book) => {
     console.log("Adding book:", book);
@@ -81,7 +61,6 @@ const YourLibrary = () => {
         withCredentials: true,
       });
       setBooks((prevBooks) => [...prevBooks, data]);
-      setFilteredBooks((prevFilteredBooks) => [...prevFilteredBooks, data]);
       toast({
         title: "Book Added",
         description: `Successfully added ${data.title} by ${data.author}.`,
@@ -113,9 +92,6 @@ const YourLibrary = () => {
       setBooks((prevBooks) =>
         prevBooks.map((b) => (b._id === data._id ? data : b))
       );
-      setFilteredBooks((prevFilteredBooks) =>
-        prevFilteredBooks.map((b) => (b._id === data._id ? data : b))
-      );
       toast({
         title: "Book Updated",
         description: `Successfully updated ${data.title} by ${data.author}.`,
@@ -144,9 +120,6 @@ const YourLibrary = () => {
       setLoading(true);
       await axiosInstance.delete(`/books/${bookId}`, { withCredentials: true });
       setBooks((prevBooks) => prevBooks.filter((book) => book._id !== bookId));
-      setFilteredBooks((prevFilteredBooks) =>
-        prevFilteredBooks.filter((book) => book._id !== bookId)
-      );
       setLoading(false);
       toast({
         title: "Book Deleted",
@@ -199,7 +172,7 @@ const YourLibrary = () => {
   return (
     <Box p={4}>
       <Flex align="center" mb={4} justify="space-between">
-        <Heading>Your Library</Heading>
+        <Heading fontSize={15}>Your Library</Heading>
         <Flex gap={4}>
           {authors.length > 0 && (
             <FormControl>
@@ -208,18 +181,19 @@ const YourLibrary = () => {
               </FormLabel>
               <Select
                 id="author"
-                placeholder={selectedAuthor}
                 value={selectedAuthor}
                 onChange={(e) => setSelectedAuthor(e.target.value)}
                 size="sm"
                 width="150px"
               >
                 <option value="">All Authors</option>
-                {authors.map((author) => (
-                  <option key={author} value={author}>
-                    {author}
-                  </option>
-                ))}
+                {authors
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((author) => (
+                    <option key={author} value={author}>
+                      {author}
+                    </option>
+                  ))}
               </Select>
             </FormControl>
           )}
@@ -230,68 +204,80 @@ const YourLibrary = () => {
               </FormLabel>
               <Select
                 id="genre"
-                placeholder={selectedGenre}
                 value={selectedGenre}
                 onChange={(e) => setSelectedGenre(e.target.value)}
                 size="sm"
                 width="150px"
               >
                 <option value="">All Genres</option>
-                {genres.map((genre) => (
-                  <option key={genre} value={genre}>
-                    {genre}
-                  </option>
-                ))}
+                {genres
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((genre) => (
+                    <option key={genre} value={genre}>
+                      {genre}
+                    </option>
+                  ))}
               </Select>
             </FormControl>
           )}
         </Flex>
       </Flex>
-      {loading ? (
-        <Flex justify="center" width="100%">
-          <Spinner color="red.500" />
-        </Flex>
-      ) : books.length === 0 ? (
-        <Flex
-          textAlign="center"
-          align="center"
-          justify="center"
-          direction="column"
-          height="full"
-        >
-          <Box>
-            <Text mb={4}>
-              You don’t have any books. Add some books to your library!
-            </Text>
-            <Button colorScheme="blue" onClick={openModalForAdd}>
+      <Flex justifyContent="center">
+        {loading ? (
+          <Flex justify="center" width="100%">
+            <Spinner color="red.500" />
+          </Flex>
+        ) : books.length === 0 ? (
+          <Flex
+            textAlign="center"
+            align="center"
+            justify="center"
+            direction="column"
+            height="full"
+          >
+            <Box>
+              <Text mb={4}>
+                You don’t have any books. Add some books to your library!
+              </Text>
+              <Button colorScheme="blue" onClick={openModalForAdd}>
+                Add Book
+              </Button>
+            </Box>
+          </Flex>
+        ) : (
+          <>
+            <Button
+              colorScheme="blue"
+              onClick={openModalForAdd}
+              position="fixed"
+              bottom={4}
+              right={4}
+            >
               Add Book
             </Button>
-          </Box>
-        </Flex>
-      ) : (
-        <>
-          <Button
-            colorScheme="blue"
-            onClick={openModalForAdd}
-            position="fixed"
-            bottom={4}
-            right={4}
-          >
-            Add Book
-          </Button>
-            <Flex wrap="wrap" gap={4} direction="row">
-              {filteredBooks.map((book) => (
-                <BookCard
-                  key={book._id}
-                  book={book}
-                  userBooks={true}
-                  onEdit={() => openModalForEdit(book)}
-                  onDelete={() => handleDeleteBook(book._id)}
-                />
-              ))}
-            </Flex>
-        </>
-      )}
+            <Box width="100%" px={4}>
+              <Box
+                display="grid"
+                justifyContent="center"
+                gridTemplateColumns="repeat(auto-fill, 180px)"
+                gap={4}
+                maxWidth="100%"
+                mx="auto"
+              >
+                {books.map((book) => (
+                  <BookCard
+                    key={book._id}
+                    book={book}
+                    userBooks={true}
+                    onEdit={() => openModalForEdit(book)}
+                    onDelete={() => handleDeleteBook(book._id)}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </>
+        )}
+      </Flex>
       {isModalOpen && (
         <BookModal
           isOpen={isModalOpen}

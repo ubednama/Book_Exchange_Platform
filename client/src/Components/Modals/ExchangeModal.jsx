@@ -20,27 +20,38 @@ const ExchangeModal = ({ isOpen, onClose, book, onExchange }) => {
   const [selectedBook, setSelectedBook] = useState("");
   const toast = useToast();
 
+  const fetchUserBooks = async () => {
+    try {
+      const response = await axiosInstance.get("/books/user");
+      setUserBooks(response.data.books);
+    } catch (error) {
+      console.error("Failed to fetch user books:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch user books.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+  
   useEffect(() => {
-    const fetchUserBooks = async () => {
-      try {
-        const response = await axiosInstance.get("/books/user");
-        setUserBooks(response.data.books);
-      } catch (error) {
-        console.error("Failed to fetch user books:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch user books.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      }
-    };
-
     fetchUserBooks();
-  }, [toast]);
+  }, []);
 
   const handleExchange = async () => {
+    if (!selectedBook) {
+      toast({
+        title: "Error",
+        description: "Please select a book to exchange.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
     try {
       await onExchange(book._id, selectedBook);
       toast({
@@ -108,7 +119,12 @@ const ExchangeModal = ({ isOpen, onClose, book, onExchange }) => {
           </Select>
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="blue" mr={3} onClick={handleExchange}>
+          <Button
+            colorScheme="blue"
+            mr={3}
+            onClick={handleExchange}
+            isDisabled={!selectedBook}
+          >
             Send Request
           </Button>
           <Button onClick={onClose}>Cancel</Button>

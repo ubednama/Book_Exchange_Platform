@@ -24,25 +24,33 @@ const NavBar = () => {
   }
 
   return (
-    <Box bg="gray.800" p={4}>
+    <Box bg="gray.600" p={4}>
       <Flex mx="auto" px="1rem" align="center" justify="space-between">
         <Flex flex="1" direction="column">
-          <Heading size="lg" color="white">
+          <Heading fontSize={20} fontWeight="medium" color="white">
             <ChakraLink as={Link} to="/">
               Book Exchange
             </ChakraLink>
           </Heading>
-          <Text fontSize="lg" color="gray.300">
+          <Text fontSize={12} color="gray.300">
             Here you can list, browse, and exchange books with other users.
           </Text>
         </Flex>
 
-        <Flex flex="1" align="center" justify="space-around">
+        <Flex
+          flex="1"
+          align="center"
+          justifyContent="end"
+          gap={{ base: 2, md: 6, lg: 8 }}
+          wrap="nowrap"
+          fontSize="sm"
+        >
           <ChakraLink
             as={Link}
             to="/"
             color="white"
             mx={2}
+            minWidth="fit-content"
             textDecoration={location.pathname === "/" ? "underline" : "none"}
           >
             Browse
@@ -52,6 +60,7 @@ const NavBar = () => {
             to="/exchange-requests"
             color="white"
             mx={2}
+            minWidth="fit-content"
             textDecoration={
               location.pathname === "/exchange-requests" ? "underline" : "none"
             }
@@ -63,19 +72,28 @@ const NavBar = () => {
             to="/library"
             color="white"
             mx={2}
+            minWidth="fit-content"
             textDecoration={
               location.pathname === "/library" ? "underline" : "none"
             }
           >
             Your Library
           </ChakraLink>
-          <Button colorScheme="red" onClick={handleLogout} mx={2}>
+          <Button
+            colorScheme="red"
+            onClick={handleLogout}
+            mx={2}
+            size="sm"
+            ml={{ base: 2, md: 12, lg: 20 }}
+            minWidth="fit-content"
+          >
             Logout
           </Button>
         </Flex>
       </Flex>
     </Box>
   );
+
 };
 
 export default NavBar;

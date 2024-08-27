@@ -54,7 +54,7 @@ const Auth = ({ isRegistering }) => {
   const isButtonDisabled = !username || !password;
 
   return (
-    <Flex minHeight="100vh">
+    <Flex minHeight="100vh" bg="gray.100">
       <Flex
         flex={1}
         align="center"
@@ -70,13 +70,8 @@ const Auth = ({ isRegistering }) => {
           </Text>
         </Box>
       </Flex>
-      
-      <Flex
-        flex={1}
-        align="center"
-        justify="center"
-        bg="gray.100"
-      >
+
+      <Flex flex={1} align="center" justify="center" bg="gray.100">
         <Box
           p={6}
           bg="white"
@@ -86,9 +81,7 @@ const Auth = ({ isRegistering }) => {
           maxWidth="450px"
           textAlign="center"
         >
-          <Heading mb={4}>
-            {isRegistering ? "Register" : "Login"}
-          </Heading>
+          <Heading mb={4}>{isRegistering ? "Register" : "Login"}</Heading>
           <form onSubmit={handleSubmit}>
             <Input
               placeholder="Username"
