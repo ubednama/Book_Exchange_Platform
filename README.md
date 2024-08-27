@@ -22,8 +22,7 @@ The Book Exchange Platform is a web application that allows users to list books 
 - **Deployment**: Render
 
 ## Deployment Link
-[Live Link](https://book-exchange-platform-1.onrender.com/)  
-[Backend Deployment](https://book-exchange-platform-vf2q.onrender.com/)
+[Deployment Link](https://book-exchange-platform-vf2q.onrender.com/)
 
 [Postman APIs Link](https://www.postman.com/dark-eclipse-727260/workspace/book-management-system)
 
