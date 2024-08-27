@@ -4,15 +4,15 @@ import {
   TabList,
   TabPanels,
   Tab,
-  TabPanel,
-  Button,
-  Text,
   Flex,
   Spinner,
   useToast,
+  TabPanel,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import axiosInstance from "../../config/api";
+import SentRequestsTab from "./SentRequestsTab";
+import ReceivedRequestsTab from "./ReceivedRequestsTab";
 
 const ExchangeRequests = () => {
   const [sentRequests, setSentRequests] = useState([]);
@@ -60,56 +60,7 @@ const ExchangeRequests = () => {
 
   useEffect(() => {
     fetchSentRequests();
-    fetchReceivedRequests();
   }, []);
-
-  const handleAcceptRequest = async (requestId) => {
-    try {
-      await axiosInstance.post(`/exchange-requests/${requestId}/accept`);
-      fetchSentRequests();
-      fetchReceivedRequests();
-      toast({
-        title: "Success",
-        description: "Request accepted successfully.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to accept request.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
-
-  const handleRejectRequest = async (requestId) => {
-    try {
-      await axiosInstance.post(`/exchange-requests/${requestId}/decline`);
-      fetchSentRequests();
-      fetchReceivedRequests();
-      toast({
-        title: "Success",
-        description: "Request rejected successfully.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to reject request.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
 
   const handleTabChange = (index) => {
     if (index === 0) {
@@ -133,98 +84,13 @@ const ExchangeRequests = () => {
         ) : (
           <TabPanels>
             <TabPanel>
-              {sentRequests.length === 0 ? (
-                <Text>No sent requests</Text>
-              ) : (
-                sentRequests.map((request) => (
-                  <Flex
-                    key={request._id}
-                    mb={2}
-                    align="center"
-                    justify="space-between"
-                    p={2}
-                    borderWidth={1}
-                    borderRadius="md"
-                    borderColor="gray.200"
-                    bg="gray.50"
-                    flexWrap="wrap"
-                  >
-                    <Text flex="1" isTruncated fontSize="sm" mr={2}>
-                      Requested By: {request.requestedBy?.name}
-                    </Text>
-                    <Text flex="1" isTruncated fontSize="sm" mr={2}>
-                      Requested: {request.requestedBook?.title} by{" "}
-                      {request.requestedBook?.author}
-                    </Text>
-                    <Flex direction="column" align="center" flex="1">
-                      <Text fontSize="sm" mb={1}>
-                        Status: {request.status}
-                      </Text>
-                    </Flex>
-                    <Text flex="1" isTruncated fontSize="sm" ml={2}>
-                      Offered: {request.offeredBook?.title} by{" "}
-                      {request.offeredBook?.author}
-                    </Text>
-                  </Flex>
-                ))
-              )}
+              <SentRequestsTab requests={sentRequests} />
             </TabPanel>
             <TabPanel>
-              {receivedRequests.length === 0 ? (
-                <Text>No received requests</Text>
-              ) : (
-                receivedRequests.map((request) => (
-                  <Flex
-                    key={request._id}
-                    mb={2}
-                    align="center"
-                    justify="space-between"
-                    p={2}
-                    borderWidth={1}
-                    borderRadius="md"
-                    borderColor="gray.200"
-                    bg="gray.50"
-                    flexWrap="wrap"
-                  >
-                    <Text flex="1" isTruncated fontSize="sm" mr={2}>
-                      Requested By: {request.requestedBy?.name}
-                    </Text>
-                    <Text flex="1" isTruncated fontSize="sm" mr={2}>
-                      Requested: {request.requestedBook?.title} by{" "}
-                      {request.requestedBook?.author}
-                    </Text>
-                    <Flex direction="column" align="center" flex="1">
-                      {request.status !== "pending" ? (
-                        <Text fontSize="sm" mb={1}>
-                          Status: {request.status}
-                        </Text>
-                      ) : (
-                        <Flex mt={2}>
-                          <Button
-                            size="sm"
-                            colorScheme="green"
-                            onClick={() => handleAcceptRequest(request._id)}
-                            mr={2}
-                          >
-                            Accept
-                          </Button>
-                          <Button
-                            size="sm"
-                            colorScheme="red"
-                            onClick={() => handleRejectRequest(request._id)}
-                          >
-                            Reject
-                          </Button>
-                        </Flex>
-                      )}
-                    </Flex>
-                    <Text flex="1" isTruncated fontSize="sm" ml={2}>
-                      Offered: {request.offeredBook?.title} by{" "}
-                      {request.offeredBook?.author}
-                    </Text>
-                  </Flex>
-                ))
-              )}
+              <ReceivedRequestsTab
+                requests={receivedRequests}
+                fetchRequests={fetchReceivedRequests}
+              />
             </TabPanel>
           </TabPanels>
         )}

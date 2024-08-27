@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Book from "../models/Book.js";
 import ExchangeRequest from "../models/Exchange.js";
 import User from "../models/User.js";
@@ -6,21 +7,19 @@ const getExchanges = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const exchangeRequests = await ExchangeRequest.find()
+        const exchangeRequests = await ExchangeRequest.find({ requestedTo: userId })
             .populate({
                 path: 'requestedBook',
-                match: { owner: userId },
-                populate: { path: 'owner', select: 'name' }
+                populate: { path: 'owner', select: 'username' }
             })
-            .populate('requester', 'name')
-            .populate('requestedBy', 'name')
+            .populate('requester', 'username')
+            .populate('requestedTo', 'username')
             .populate('offeredBook', 'title author')
-            .populate('offeredBy', 'name')
             .sort({ createdAt: -1 });
 
-        const filteredRequests = exchangeRequests.filter(req => req.requestedBook !== null);
+        console.log("exchange requests", exchangeRequests);
 
-        res.send(filteredRequests);
+        res.send(exchangeRequests);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch incoming exchange requests', details: error.message });
     }
@@ -33,11 +32,11 @@ const getSentExchanges = async (req, res) => {
         const userRequests = await ExchangeRequest.find({ requester: userId })
             .populate('requestedBook', 'title author')
             .populate('offeredBook', 'title author')
-            .populate('requester', 'name')
-            .populate('requestedBy', 'name')
-            .populate('offeredBy', 'name')
+            .populate('requester', 'username')
+            .populate('requestedTo', 'username')
             .sort({ createdAt: -1 });
 
+            console.log("userRequests", userRequests);
         res.send(userRequests);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch outgoing exchange requests', details: error.message });
@@ -53,14 +52,13 @@ const acceptExchange = async (req, res) => {
             .populate('requester')
             .populate('requestedBook')
             .populate('offeredBook')
-            .populate('requestedBy')
-            .populate('offeredBy');
+            .populate('requestedTo');
 
         if (!exchangeRequest) {
             return res.status(404).json({ error: 'Exchange request not found' });
         }
 
-        const { requester, requestedBook, offeredBook, requestedBy, offeredBy } = exchangeRequest;
+        const { requester, requestedBook, offeredBook, requestedTo } = exchangeRequest;
 
         if (requester._id.toString() === userId) {
             return res.status(403).json({ error: 'You cannot accept your own request' });
@@ -84,20 +82,25 @@ const acceptExchange = async (req, res) => {
 
             await User.updateMany(
                 { _id: { $in: [requester._id, userId] } },
-                {$pull: {
-                    books: { $in: [requestedBook._id, offeredBook._id] }},
-                $push: {
-                    books: { $each: [requestedBook._id, offeredBook._id] }}},
+                { $pull: { books: { $in: [requestedBook._id, offeredBook._id] } } },
                 { session }
             );
 
-            await Book.updateMany(
-                { _id: { $in: [requestedBook._id, offeredBook._id] } },
-                {$set: {owner: {$cond: [
-                                { $eq: ['$_id', requestedBook._id] },
-                                userId,
-                                requester._id]
-                        }}},
+            await User.updateMany(
+                { _id: { $in: [requester._id, userId] } },
+                { $push: { books: { $each: [requestedBook._id, offeredBook._id] } } },
+                { session }
+            );
+            
+            await Book.updateOne(
+                { _id: requestedBook._id },
+                { $set: { owner: userId } },
+                { session }
+            );
+
+            await Book.updateOne(
+                { _id: offeredBook._id },
+                { $set: { owner: requester._id } },
                 { session }
             );
 
@@ -115,6 +118,7 @@ const acceptExchange = async (req, res) => {
                 { status: 'rejected' },
                 { session }
             );
+
             await session.commitTransaction();
             session.endSession();
 
@@ -194,18 +198,17 @@ const postExchange = async (req, res) => {
             requestedBook: requestedBookId,
             offeredBook: offeredBookId,
             status: 'pending',
-            requestedBy: requesterId,
-            offeredBy: offeredBook.owner
+            requestedTo: requestedBook.owner
         };
 
-        const existingRequest = await ExchangeRequest.findOne(requestData)
+        const existingRequest = await ExchangeRequest.findOne(requestData);
         if (existingRequest) return res.status(404).json({
             error: 'A similar pending exchange request already exists'
-        })
-        
+        });
+
         const exchangeRequest = new ExchangeRequest(requestData);
         await exchangeRequest.save();
-        
+
         res.status(201).json({ message: 'Exchange request created', exchangeRequest });
     } catch (error) {
         console.error(error.message);

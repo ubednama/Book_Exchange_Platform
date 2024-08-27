@@ -17,13 +17,7 @@ const ExchangeRequestSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'accepted', 'rejected'],
         default: 'pending' 
-    },
-    requestedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    offeredBy: {
+    }, requestedTo: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true

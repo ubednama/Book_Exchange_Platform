@@ -148,76 +148,68 @@ const getTopGenresAndAuthors = async () => {
     };
 };
 
-const getUserGenresAndAuthors = async (userId) => {
-    const [userGenres, userAuthors] = await Promise.all([
-        Book.aggregate([
-            { $match: { owner: userId } },
-            { $group: { _id: '$genre', count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 10 },
-            { $project: { _id: 0, genre: '$_id' } }
-        ]).exec(),
-        Book.aggregate([
-            { $match: { owner: userId } },
-            { $group: { _id: '$author', count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 10 },
-            { $project: { _id: 0, author: '$_id' } }
-        ]).exec()
-    ]);
-
-    return {
-        genres: userGenres.map(g => g.genre),
-        authors: userAuthors.map(a => a.author)
-    };
-};
-
-const findMatches = async (userId, genres, authors) => {
-    return await Book.find({
-        $and: [{
-                $or: [{ genre: { $in: genres } },
-                    { author: { $in: authors } }]
-                },{ owner: { $ne: userId } }]
-    }).populate('owner', 'username').limit(20);
-};
-
 export const getMatches = async (req, res) => {
     const userId = req.userId;
 
     try {
         const user = await User.findById(userId);
-
         if (!user) {
-            return res.status(404).json({error: 'User not found'});
+            return res.status(404).json({ error: 'User not found' });
         }
 
-        const userBooks = await Book.find({ owner: userId });
-        let genres, authors;
-        if (userBooks.length > 0) {
-            ({ genres, authors } = await getUserGenresAndAuthors(userId));
+        const userBooksCount = await Book.countDocuments({ owner: userId });
+        let userGenres = [];
+        let userAuthors = [];
 
-            const ownedBookTitles = userBooks.map(b => b.title);
-            const ownedBookAuthors = userBooks.map(b => b.author);
-            const ownedBookGenres = userBooks.map(b => b.genre);
-
-            const matches = await findMatches(userId, genres, authors);
-
-            const filteredMatches = matches.filter(book =>
-                !(
-                    ownedBookTitles.includes(book.title) &&
-                    ownedBookAuthors.includes(book.author) &&
-                    ownedBookGenres.includes(book.genre)
-                )
-            );
-
-            res.json(filteredMatches);
-        } else {
-            const { genres: topGenres, authors: topAuthors } = await getTopGenresAndAuthors();
-
-            const matches = await findMatches(userId, topGenres, topAuthors);
-
-            res.json(matches);
+        if (userBooksCount > 0) {
+            [userGenres, userAuthors] = await Promise.all([
+                Book.distinct('genre', { owner: userId }),
+                Book.distinct('author', { owner: userId })
+            ]);
         }
+
+        const { genres: topGenres, authors: topAuthors } = await getTopGenresAndAuthors();
+
+        const criteria = {
+            $or: [
+                { genre: { $in: [...userGenres, ...topGenres] } },
+                { author: { $in: [...userAuthors, ...topAuthors] } }
+            ],
+            owner: { $ne: userId }
+        };
+
+        const allMatches = await Book.find(criteria).populate('owner', 'username');
+
+        const uniqueBooks = new Set();
+        const matches = allMatches.filter(match => {
+            const bookId = `${match.title}-${match.author}-${match.genre}`;
+            if (!uniqueBooks.has(bookId)) {
+                uniqueBooks.add(bookId);
+                return true;
+            }
+            return false;
+        });
+
+        if (matches.length < 17) {
+            const randomMatches = await Book.aggregate([
+                { $match: { owner: { $ne: userId } } },
+                { $sample: { size: 18 - matches.length } }
+            ]);
+
+            const filteredRandomMatches = randomMatches.filter(match => {
+                const bookId = `${match.title}-${match.author}-${match.genre}`;
+                if (!uniqueBooks.has(bookId)) {
+                    uniqueBooks.add(bookId);
+                    return true;
+                }
+                return false;
+            });
+
+            matches.push(...filteredRandomMatches);
+        }
+
+        res.json(matches.slice(0, 17));
+
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
