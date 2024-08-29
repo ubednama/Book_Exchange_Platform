@@ -178,34 +178,29 @@ export const getMatches = async (req, res) => {
             owner: { $ne: userId }
         };
 
-        const allMatches = await Book.find(criteria).populate('owner', 'username');
-
-        const uniqueBooks = new Set();
-        const matches = allMatches.filter(match => {
-            const bookId = `${match.title}-${match.author}-${match.genre}`;
-            if (!uniqueBooks.has(bookId)) {
-                uniqueBooks.add(bookId);
-                return true;
-            }
-            return false;
-        });
+        const matches = await Book.aggregate([
+            { $match: criteria },
+            { $group: { _id: { title: "$title", author: "$author", genre: "$genre" }, doc: { $first: "$$ROOT" } } },
+            { $replaceRoot: { newRoot: "$doc" } },
+            { $lookup: { from: 'users', localField: 'owner', foreignField: '_id', as: 'ownerDetails' } },
+            { $unwind: '$ownerDetails' },
+            { $project: { title: 1, author: 1, genre: 1, 'ownerDetails.username': 1 } },
+            { $limit: 17 }
+        ]);
 
         if (matches.length < 17) {
-            const randomMatches = await Book.aggregate([
+            const additionalMatches = await Book.aggregate([
                 { $match: { owner: { $ne: userId } } },
-                { $sample: { size: 18 - matches.length } }
+                { $sample: { size: 18 - matches.length } },
+                { $group: { _id: { title: "$title", author: "$author", genre: "$genre" }, doc: { $first: "$$ROOT" } } },
+                { $replaceRoot: { newRoot: "$doc" } },
+                { $lookup: { from: 'users', localField: 'owner', foreignField: '_id', as: 'ownerDetails' } },
+                { $unwind: '$ownerDetails' },
+                { $project: { title: 1, author: 1, genre: 1, 'ownerDetails.username': 1 } },
+                { $limit: 18 - matches.length }
             ]);
 
-            const filteredRandomMatches = randomMatches.filter(match => {
-                const bookId = `${match.title}-${match.author}-${match.genre}`;
-                if (!uniqueBooks.has(bookId)) {
-                    uniqueBooks.add(bookId);
-                    return true;
-                }
-                return false;
-            });
-
-            matches.push(...filteredRandomMatches);
+            matches.push(...additionalMatches);
         }
 
         res.json(matches.slice(0, 17));
