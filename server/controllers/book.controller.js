@@ -127,25 +127,29 @@ export const deleteBook = async (req, res) => {
 };
 
 const getTopGenresAndAuthors = async () => {
-    const [topGenres, topAuthors] = await Promise.all([
-        Book.aggregate([
-            { $group: { _id: '$genre', count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 10 },
-            { $project: { _id: 0, genre: '$_id' } }
-        ]).exec(),
-        Book.aggregate([
-            { $group: { _id: '$author', count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 10 },
-            { $project: { _id: 0, author: '$_id' } }
-        ]).exec()
-    ]);
+    const result = await Book.aggregate([
+        {
+            $facet: {
+                topGenres: [
+                    { $group: { _id: '$genre', count: { $sum: 1 } } },
+                    { $sort: { count: -1 } },
+                    { $limit: 10 },
+                    { $project: { _id: 0, genre: '$_id' } }
+                ],
+                topAuthors: [
+                    { $group: { _id: '$author', count: { $sum: 1 } } },
+                    { $sort: { count: -1 } },
+                    { $limit: 10 },
+                    { $project: { _id: 0, author: '$_id' } }
+                ]
+            }
+        }
+    ]).exec();
 
-    return {
-        genres: topGenres.map(g => g.genre),
-        authors: topAuthors.map(a => a.author)
-    };
+    const topGenres = result[0].topGenres.map(g => g.genre);
+    const topAuthors = result[0].topAuthors.map(a => a.author);
+
+    return { genres: topGenres, authors: topAuthors };
 };
 
 export const getMatches = async (req, res) => {
