@@ -152,21 +152,17 @@ export const getMatches = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
 
-        const userBooksCount = await Book.countDocuments({ owner: userId });
-        let userGenres = [];
-        let userAuthors = [];
+        const userBooks = await Book.find({ owner: userId }).select('genre author').lean();
+        const userGenres = [...new Set(userBooks.map(book => book.genre))];
+        const userAuthors = [...new Set(userBooks.map(book => book.author))];
 
-        if (userBooksCount > 0) {
-            [userGenres, userAuthors] = await Promise.all([
-                Book.distinct('genre', { owner: userId }),
-                Book.distinct('author', { owner: userId })
-            ]);
-        }
+        // if (userBooksCount > 0) {
+        //     [userGenres, userAuthors] = await Promise.all([
+        //         Book.distinct('genre', { owner: userId }),
+        //         Book.distinct('author', { owner: userId })
+        //     ]);
+        // }
 
         const { genres: topGenres, authors: topAuthors } = await getTopGenresAndAuthors();
 
