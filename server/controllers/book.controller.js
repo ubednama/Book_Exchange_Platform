@@ -156,17 +156,9 @@ export const getMatches = async (req, res) => {
     const userId = req.userId;
 
     try {
-
         const userBooks = await Book.find({ owner: userId }).select('genre author').lean();
         const userGenres = [...new Set(userBooks.map(book => book.genre))];
         const userAuthors = [...new Set(userBooks.map(book => book.author))];
-
-        // if (userBooksCount > 0) {
-        //     [userGenres, userAuthors] = await Promise.all([
-        //         Book.distinct('genre', { owner: userId }),
-        //         Book.distinct('author', { owner: userId })
-        //     ]);
-        // }
 
         const { genres: topGenres, authors: topAuthors } = await getTopGenresAndAuthors();
 
@@ -184,7 +176,7 @@ export const getMatches = async (req, res) => {
             { $replaceRoot: { newRoot: "$doc" } },
             { $lookup: { from: 'users', localField: 'owner', foreignField: '_id', as: 'ownerDetails' } },
             { $unwind: '$ownerDetails' },
-            { $project: { title: 1, author: 1, genre: 1, 'ownerDetails.username': 1 } },
+            { $project: { title: 1, author: 1, genre: 1, description: 1, owner: { _id: "$ownerDetails._id", username: "$ownerDetails.username" } } },
             { $limit: 17 }
         ]);
 
@@ -196,7 +188,7 @@ export const getMatches = async (req, res) => {
                 { $replaceRoot: { newRoot: "$doc" } },
                 { $lookup: { from: 'users', localField: 'owner', foreignField: '_id', as: 'ownerDetails' } },
                 { $unwind: '$ownerDetails' },
-                { $project: { title: 1, author: 1, genre: 1, 'ownerDetails.username': 1 } },
+                { $project: { title: 1, author: 1, genre: 1, description: 1, owner: { _id: "$ownerDetails._id", username: "$ownerDetails.username" } } },
                 { $limit: 18 - matches.length }
             ]);
 

@@ -8,88 +8,36 @@ import {
   Select,
   Flex,
   Spinner,
-  useToast,
 } from "@chakra-ui/react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import BookCard from "../BookCard";
-import axiosInstance from "../../config/api";
+import useFetchBooks from "../../hooks/useFetchBooks";
 
 const Home = () => {
-  const [allBooks, setAllBooks] = useState([]);
-  const [recommendedBooks, setRecommendedBooks] = useState([]);
-  const [authors, setAuthors] = useState([]);
-  const [genres, setGenres] = useState([]);
   const [selectedAuthor, setSelectedAuthor] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [tabIndex, setTabIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const toast = useToast();
 
-  const fetchBooks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await axiosInstance.get("/books", {
-        params: {
-          author: selectedAuthor || "all",
-          genre: selectedGenre || "all",
-        },
-      });
-      setAllBooks(data.books);
-      setAuthors(data.authors);
-      setGenres(data.genres);
-    } catch (error) {
-      console.error("Error fetching books and filters:", error);
-      toast({
-        title: "Error fetching books",
-        description: "Could not fetch books. Please try again later.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAuthor, selectedGenre]);
-
-  const fetchRecommendedBooks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await axiosInstance.get("/books/matches");
-      setRecommendedBooks(data);
-    } catch (error) {
-      console.error("Error fetching recommended books:", error);
-      toast({
-        title: "Error fetching recommendations",
-        description:
-          "Could not fetch recommended books. Please try again later.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const {
+    loading, books, recommendedBooks, authors, genres, fetchBooks, fetchRecommendedBooks
+  } = useFetchBooks();
+  console.log(recommendedBooks, books)
 
   useEffect(() => {
-    console.log("Fetching books...");
-    fetchBooks();
-  }, [fetchBooks]);
+    fetchBooks(selectedAuthor, selectedGenre);
+  }, [fetchBooks, selectedAuthor, selectedGenre]);
 
   useEffect(() => {
     if (tabIndex === 1) {
-      console.log("Fetching recommended books...");
       fetchRecommendedBooks();
     }
   }, [tabIndex, fetchRecommendedBooks]);
 
   const handleAuthorChange = (e) => {
-    console.log("Author changed:", e.target.value);
     setSelectedAuthor(e.target.value);
   };
 
   const handleGenreChange = (e) => {
-    console.log("Genre changed:", e.target.value);
     setSelectedGenre(e.target.value);
   };
 
@@ -149,8 +97,8 @@ const Home = () => {
                     maxWidth="100%"
                     mx="auto"
                   >
-                    {allBooks.length > 0 ? (
-                      allBooks.map((book) => (
+                    {books.length > 0 ? (
+                      books.map((book) => (
                         <BookCard key={book._id} book={book} />
                       ))
                     ) : (

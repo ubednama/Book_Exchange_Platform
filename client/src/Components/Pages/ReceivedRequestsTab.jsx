@@ -7,59 +7,23 @@ import {
   Td,
   Text,
   Button,
-  useToast,
   Flex,
 } from "@chakra-ui/react";
-import axiosInstance from "../../config/api";
+import useHandleRequest from "../../hooks/useHandleRequest";
 
 const ReceivedRequestsTab = ({ requests, fetchRequests }) => {
-  const toast = useToast();
+  const  {
+    handleAcceptRequest,
+    handleRejectRequest
+  } = useHandleRequest();
 
-  const handleAcceptRequest = async (requestId) => {
-    try {
-      await axiosInstance.post(`/exchange-requests/${requestId}/accept`);
-      fetchRequests();
-      toast({
-        title: "Success",
-        description: "Request accepted successfully.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to accept request.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
+  const handleReject = (requestId) => {
+    handleRejectRequest(requestId, fetchRequests)
+  }
 
-  const handleRejectRequest = async (requestId) => {
-    try {
-      await axiosInstance.post(`/exchange-requests/${requestId}/decline`);
-      fetchRequests();
-      toast({
-        title: "Success",
-        description: "Request rejected successfully.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to reject request.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
+  const handleAccept = (requestId) => {
+    handleAcceptRequest(requestId, fetchRequests)
+  }
 
   return (
     <>
@@ -91,7 +55,7 @@ const ReceivedRequestsTab = ({ requests, fetchRequests }) => {
                       <Button
                         size="sm"
                         colorScheme="green"
-                        onClick={() => handleAcceptRequest(request._id)}
+                        onClick={() => handleAccept(request._id)}
                         mr={2}
                       >
                         Accept
@@ -99,7 +63,7 @@ const ReceivedRequestsTab = ({ requests, fetchRequests }) => {
                       <Button
                         size="sm"
                         colorScheme="red"
-                        onClick={() => handleRejectRequest(request._id)}
+                        onClick={() => handleReject(request._id)}
                       >
                         Reject
                       </Button>

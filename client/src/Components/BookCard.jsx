@@ -13,10 +13,15 @@ const BookCard = ({ book, onDelete, onEdit, userBooks = false }) => {
         requestedBookId,
         offeredBookId,
       });
-      toast("Exchange request sent!");
     } catch (error) {
       console.error("Failed to send exchange request:", error);
-      toast("Failed to send exchange request. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to send exchange request. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
