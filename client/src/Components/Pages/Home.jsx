@@ -21,7 +21,6 @@ const Home = () => {
   const {
     loading, books, recommendedBooks, authors, genres, fetchBooks, fetchRecommendedBooks
   } = useFetchBooks();
-  console.log(recommendedBooks, books)
 
   useEffect(() => {
     fetchBooks(selectedAuthor, selectedGenre);
